@@ -1,0 +1,1 @@
+rsync -avz server/ stef@pi3.lan:/opt/node/sudoku/

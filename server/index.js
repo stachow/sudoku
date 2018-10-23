@@ -1,13 +1,10 @@
 const sudoku = require("sudoku");
-var http = require("http");
+const http = require("http");
 
 http.createServer((req, res) => {
 
     res.setHeader('Content-Type', 'application/json');
-
-    const puzzle = sudoku.makepuzzle();
-
-    res.write(JSON.stringify(puzzle));
+    res.write(JSON.stringify(sudoku.makepuzzle()));
     res.end();
 
-}).listen(8080);
+}).listen(process.env.PORT || 5000);
