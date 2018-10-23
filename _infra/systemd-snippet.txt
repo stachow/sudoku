@@ -1,3 +1,5 @@
+// https://www.terlici.com/2015/06/20/running-node-forever.html
+
 [Service]
 ExecStart=/home/stef/n/bin/node /opt/node/sudoku/index.js
 Restart=always
