@@ -1,0 +1,14 @@
+{
+  "name": "sudoku-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "test"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "sudoku": "0.0.2"
+  }
+}
