@@ -1,1 +1,1 @@
-rsync -avz server/ stef@pi3.lan:/opt/node/sudoku/
+rsync -avz server/ stef@pi3.lan:/var/www/node/sudoku; rsync -avz client/ stef@pi3.lan:/var/www/html/sudoku;

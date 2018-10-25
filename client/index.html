@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8" />
+        <title>Hello React!</title>
+        <style>
+            table {
+                border-collapse: collapse;
+            }
+            td{
+                border: 1px solid black;
+                height:1em;
+                width: 1em;
+                text-align: center;
+            }
+            td:first-child {
+                border-left-width:3px;
+            }
+            td:nth-child(3n) {
+                border-right-width: 3px;
+            }
+            tr:first-child td{
+                border-top-width: 3px;
+            }
+            tr:nth-child(3n) td{
+                border-bottom-width: 3px;
+            }
+
+        </style>
+    </head>
+    <body>
+        <div id="example"></div>
+
+        <!-- Dependencies -->
+        <script src="./node_modules/react/umd/react.development.js"></script>
+        <script src="./node_modules/react-dom/umd/react-dom.development.js"></script>
+
+        <!-- Main -->
+        <script src="./dist/bundle.js"></script>
+    </body>
+</html>
