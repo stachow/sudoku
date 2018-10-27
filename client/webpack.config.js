@@ -31,5 +31,6 @@ module.exports = {
         "react": "React",
         "react-dom": "ReactDOM"
     },
-    watch: true
+    watch: true,
+    mode: "development"
 };
