@@ -17,16 +17,17 @@ export default class Sudoku extends Component<any, sudoku.sudoku> {
   }
 
   render() {
-    const rows  = this.state && this.state.values || [];
+    const rows  = this.state && this.state.cells || [];
 
     return (
-      <table><tbody>{
-        rows.map(row => <tr>{
-                row.map(cell => <td>{
-                    cell
-                }</td>)
-            }</tr>
-        )}</tbody></table>
+      <h1>Hi</h1>
+      // <table><tbody>{
+      //   rows.map(row => <tr>{
+      //           row.map(cell => <td>{
+      //               cell.
+      //           }</td>)
+      //       }</tr>
+      //   )}</tbody></table>
     );
   }
 

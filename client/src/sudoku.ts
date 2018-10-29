@@ -1,52 +1,72 @@
-type options = {
-    cells: number[][][];
-    x: number[][];
-    y: number[][];
-    z: number[][];
+type cellValue = {
+    x: number;
+    y: number;
+    z: number;
+    value: number;
 }
 
-export type sudoku = {
-    values: number[][];
-    options: options;
+type cell = cellValue & {
+    options: number[];
 }
 
-function getRange(start: number, n: number): number[] {
-    return [...Array(n).keys()]
-                .filter(i => i >= start);
-}
-
-function getBoxRanges(x: number, y: number): {xRange: number[], yRange: number[]} {
-    let buildRange = (i: number) => {
-        let start = i && 3 * Math.floor(i /3);
-        return getRange(start, start + 2);
-    }
-
-    return {
-        xRange: buildRange(x),
-        yRange: buildRange(y)
+type sudoku = {
+    cells: cell[];
+    groupOptions: {
+        x: number[][],
+        y: number[][],
+        z: number[][]
     }
 }
 
-// function getOptions(values: number[][]):  options {
-//     let getCellOptions = (x: number, y: number) => ([
-//         ...values[x],
-//         ...values.map(row => row[y])
-//     ]);
+const range0To8 = [0, 1, 2, ,3, 4, 5, 6, 7, 8];
+const range1To9 = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
+const getCellGroups = (pos: number) =>  {
+    const x = pos % 9;
+    const y = Math.floor(pos / 9);
+    const z = [
+        "00", "01", "02",
+        "10", "11", "12",
+        "20", "21", "22"
+    ].indexOf(`${Math.floor(x / 3)}${Math.floor(y / 3)}`);
 
-//     let getZValues = (i: number) =>
-// }
-
-export function transpose(raw: number[]): sudoku  {
-    let flatArray = raw.map(i => i || null);
-
-    let dimensionLength = Math.sqrt(flatArray.length);
-    let range = getRange(0, dimensionLength);
-    let values = range
-            .map(i => flatArray.slice(i * dimensionLength, (i + 1) * dimensionLength));
-
-    return <sudoku>{
-        values,
-        options: null
-    }
+    return { x, y, z };
 }
+
+const rebuildCellOptions = (inpCells: cellValue[]) => {
+    let unique = (arr: any[]) => [...new Set(arr)];
+    let inFirstNotSecond = (inArr: any[], notInArr: any[]) => inArr.filter(i => !notInArr.some(j => i === j));
+
+    let getCellUnusedValues = (cell: cellValue) => unique(
+        inFirstNotSecond(range1To9,
+            [
+                ...inpCells.filter(c => c.x === cell.x).map(c => c.value),
+                ...inpCells.filter(c => c.y === cell.y).map(c => c.value),
+                ...inpCells.filter(c => c.z === cell.z).map(c => c.value)
+            ]
+        )
+    );
+
+    return inpCells.map(inpCell => ({
+        ...inpCell,
+        options: getCellUnusedValues(inpCell)
+    }));
+}
+
+const rebuildGroupOptions = (cells: cell[]) => {
+
+};
+
+const transpose = (raw: number[]) => {
+    const flatArray = raw.map(i => i || null);
+
+    const cellsWithoutOptions = flatArray.map((value, index) => ({ ...getCellGroups(index), value }));
+    const cells = rebuildCellOptions(cellsWithoutOptions);
+
+    return <sudoku>{ cells }
+}
+
+export {
+    sudoku,
+    transpose
+};
