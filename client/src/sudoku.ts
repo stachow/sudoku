@@ -1,4 +1,5 @@
 type cellValue = {
+    pos: number;
     x: number;
     y: number;
     z: number;
@@ -11,17 +12,17 @@ type cell = cellValue & {
 
 type sudoku = {
     cells: cell[];
-    groupOptions: {
-        x: number[][],
-        y: number[][],
-        z: number[][]
+    groupValuePositionOptions: {
+        x: number[][][],
+        y: number[][][],
+        z: number[][][]
     }
 }
 
-const range0To8 = [0, 1, 2, ,3, 4, 5, 6, 7, 8];
 const range1To9 = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+const range0To8 = [0, 1, 2, 3, 4, 5, 6, 7, 8];
 
-function getCellGroups (pos: number) {
+function getCellIndices (pos: number) {
     const x = pos % 9;
     const y = Math.floor(pos / 9);
     const z = [
@@ -33,31 +34,44 @@ function getCellGroups (pos: number) {
     return { x, y, z };
 }
 
-function rebuildCellOptions(inpCells: cellValue[]) {
+function rebuildOptions(inpCells: cellValue[]): sudoku {
     let unique = (arr: any[]) => [...new Set(arr)];
     let inFirstNotSecond = (inArr: any[], notInArr: any[]) => inArr.filter(i => !notInArr.some(j => i === j));
 
-    let getCellUnusedValues = (cell: cellValue) => cell.value ? [] : unique(
-        inFirstNotSecond(range1To9,
+    let getCellIndexPotentialValues = (accessor: (cell1: cellValue) => boolean) => inpCells.filter(accessor).map(c => c.value);
+
+    let getCellPotentialValues = (cell: cellValue) => cell.value ? [] : unique(
+        inFirstNotSecond(
+            range1To9,
             [
-                ...inpCells.filter(c => c.x === cell.x).map(c => c.value),
-                ...inpCells.filter(c => c.y === cell.y).map(c => c.value),
-                ...inpCells.filter(c => c.z === cell.z).map(c => c.value)
+                ...getCellIndexPotentialValues(inpCell => inpCell.x === cell.x),
+                ...getCellIndexPotentialValues(inpCell => inpCell.y === cell.y),
+                ...getCellIndexPotentialValues(inpCell => inpCell.z === cell.z)
             ]
         )
     );
 
-    return inpCells.map(inpCell => ({
+    let cells = inpCells.map(inpCell => ({
         ...inpCell,
-        options: getCellUnusedValues(inpCell)
+        options: getCellPotentialValues(inpCell)
     }));
+
+    // for each group, for each value, which cells can it go in
+    return {
+        cells,
+        groupValuePositionOptions: {
+            x: range0To8.map(groupIndex => (range1To9.map(valueIndex => cells
+                                                    .filter(cell => cell.x === groupIndex && cell.options.some(option => option === valueIndex))
+                                                    .map(cell => cell.pos)))),
+            y: [],
+            z: []
+        }
+    };
 }
 
 function transpose(raw: number[]) {
-    const cellsWithoutOptions = raw.map((value, index) => ({ ...getCellGroups(index), value }));
-    const cells = rebuildCellOptions(cellsWithoutOptions);
-
-    return <sudoku>{ cells }
+    const cellsWithoutOptions = raw.map((value, pos) => ({ pos, ...getCellIndices(pos), value }));
+    return rebuildOptions(cellsWithoutOptions);
 }
 
 export {

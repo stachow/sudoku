@@ -2,8 +2,6 @@ import { sudoku, transpose}  from "./sudoku";
 
 let logGrid = (s: sudoku) => {
 
-    let output: (string | number)[] = [];
-
     let getGridSeparator = (i: number /* 1 -based */) => {
         if (i === 81) {
             return "";
@@ -16,25 +14,38 @@ let logGrid = (s: sudoku) => {
         }
     };
 
-    output = s.cells.reduce((prev: string[], curr, index) => {
+    let grid = s.cells.reduce((prev, curr, index) => {
         return [
             ...prev,
-            curr.value || ".",
+            /* "(" + curr.pos + ")" + */(curr.value || "."),
             getGridSeparator(index + 1)
         ]
-    }, output);
+    }, []);
 
-    output = s.cells.reduce((prev: string[], curr, index) => {
+    let cells = s.cells.reduce((prev, curr) => {
         return [
             ...prev,
-            `\n${index} `,
+            `\n${curr.pos <= 9 ? " " : ""}${curr.pos}: ${curr.x}${curr.y}${curr.z}: `,
             ...curr.options,
         ]
-    }, output);
+    }, []);
 
-    console.log(output.join(""));
+    let groups = s.groupValuePositionOptions.x.reduce((groupPrev, groupCurr, groupIndex) => {
+        return [
+            ...groupPrev,
 
+            groupCurr.reduce((valuePrev, valueCurr, valueIndex) => {
+                return [
+                    ...valuePrev,
+                    `x${groupIndex}${valueIndex + 1}: ${valueCurr}`,
+                    "\n"
+                ]
+            }, []).join(""),
+        ]
+    }, []);
 
+    console.log([...grid, "\n", ...cells, "\n", ...[]].join(""));
+    console.log(groups.join(""));
 };
 
 test("foo", () => {
@@ -53,7 +64,7 @@ test("foo", () => {
         0,2,0,  0,3,0,  0,0,8
     ];
 
-    let sudouku = transpose(input);
-    logGrid(sudouku);
-    expect(sudouku).toBeDefined();
+    let soduku = transpose(input);
+    logGrid(soduku);
+    expect(soduku).toBeDefined();
 });
