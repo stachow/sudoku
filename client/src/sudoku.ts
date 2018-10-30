@@ -21,7 +21,7 @@ type sudoku = {
 const range0To8 = [0, 1, 2, ,3, 4, 5, 6, 7, 8];
 const range1To9 = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
-const getCellGroups = (pos: number) =>  {
+function getCellGroups (pos: number) {
     const x = pos % 9;
     const y = Math.floor(pos / 9);
     const z = [
@@ -33,11 +33,11 @@ const getCellGroups = (pos: number) =>  {
     return { x, y, z };
 }
 
-const rebuildCellOptions = (inpCells: cellValue[]) => {
+function rebuildCellOptions(inpCells: cellValue[]) {
     let unique = (arr: any[]) => [...new Set(arr)];
     let inFirstNotSecond = (inArr: any[], notInArr: any[]) => inArr.filter(i => !notInArr.some(j => i === j));
 
-    let getCellUnusedValues = (cell: cellValue) => unique(
+    let getCellUnusedValues = (cell: cellValue) => cell.value ? [] : unique(
         inFirstNotSecond(range1To9,
             [
                 ...inpCells.filter(c => c.x === cell.x).map(c => c.value),
@@ -53,14 +53,8 @@ const rebuildCellOptions = (inpCells: cellValue[]) => {
     }));
 }
 
-const rebuildGroupOptions = (cells: cell[]) => {
-
-};
-
-const transpose = (raw: number[]) => {
-    const flatArray = raw.map(i => i || null);
-
-    const cellsWithoutOptions = flatArray.map((value, index) => ({ ...getCellGroups(index), value }));
+function transpose(raw: number[]) {
+    const cellsWithoutOptions = raw.map((value, index) => ({ ...getCellGroups(index), value }));
     const cells = rebuildCellOptions(cellsWithoutOptions);
 
     return <sudoku>{ cells }
