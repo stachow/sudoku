@@ -1,28 +1,26 @@
-type cellValue = {
+type sudoku = number[];
+
+type baseCell = {
     pos: number;
-    x: number;
-    y: number;
-    z: number;
+    groups: string[];
     value: number;
 }
 
-type cell = cellValue & {
+type cell = baseCell & {
     options: number[];
 }
 
-type sudoku = {
+type analysis = {
     cells: cell[];
-    groupValuePositionOptions: {
-        x: number[][][],
-        y: number[][][],
-        z: number[][][]
-    }
+    groupOptions: {group: string, value: number, options: number[]}[];
 }
 
 const range1To9 = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 const range0To8 = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+const allGroupNames = ["x", "y", "z"]
+                        .reduce((prev, curr) => [...prev, ...range0To8.map(n => curr + n)], <string[]>[]);
 
-function getCellIndices (pos: number) {
+function getCellGroups (pos: number) {
     const x = pos % 9;
     const y = Math.floor(pos / 9);
     const z = [
@@ -31,50 +29,74 @@ function getCellIndices (pos: number) {
         "20", "21", "22"
     ].indexOf(`${Math.floor(x / 3)}${Math.floor(y / 3)}`);
 
-    return { x, y, z };
+    return [`x${x}`, `y${y}`, `z${z}`];
 }
 
-function rebuildOptions(inpCells: cellValue[]): sudoku {
-    let unique = (arr: any[]) => [...new Set(arr)];
-    let inFirstNotSecond = (inArr: any[], notInArr: any[]) => inArr.filter(i => !notInArr.some(j => i === j));
+function rebuildOptions(inCells: baseCell[]): analysis {
+    const inFirstNotSecond = <T>(firstArr: T[], secondArr: T[]) => firstArr.filter(i => !secondArr.some(j => i === j));
 
-    let getCellIndexPotentialValues = (accessor: (cell1: cellValue) => boolean) => inpCells.filter(accessor).map(c => c.value);
+    const groupsCurrentValues = allGroupNames.reduce((prev, curr) => {
+        return ({...prev, [curr]: inCells.filter(c => c.groups.some(g => g === curr) && c.value).map(c => c.value) });
+    }, <{[key: string]: number[]}>{});
 
-    let getCellPotentialValues = (cell: cellValue) => cell.value ? [] : unique(
-        inFirstNotSecond(
-            range1To9,
-            [
-                ...getCellIndexPotentialValues(inpCell => inpCell.x === cell.x),
-                ...getCellIndexPotentialValues(inpCell => inpCell.y === cell.y),
-                ...getCellIndexPotentialValues(inpCell => inpCell.z === cell.z)
-            ]
-        )
-    );
+    const getCellOptions = (cell: baseCell) => cell.value
+            ? []
+            : inFirstNotSecond<number>(range1To9, cell.groups.reduce((prev, curr) => [...prev, ...groupsCurrentValues[curr]],[]));
 
-    let cells = inpCells.map(inpCell => ({
+    const cells = inCells.map(inpCell => ({
         ...inpCell,
-        options: getCellPotentialValues(inpCell)
+        options: getCellOptions(inpCell)
     }));
 
-    // for each group, for each value, which cells can it go in
+    const groupOptions = allGroupNames.reduce((prevGroup, group) => {
+        return [
+            ...prevGroup,
+            ...range1To9.reduce((prevValue, value) => {
+                return [
+                    ...prevValue,
+                    {group, value,
+                        options: cells.filter(cell => cell.groups.some(grp => grp === group)
+                                                && cell.options.some(opt => opt === value))
+                                    .map(c => c.pos)}
+                ]}, [])
+        ]}, []);
+
     return {
         cells,
-        groupValuePositionOptions: {
-            x: range0To8.map(groupIndex => (range1To9.map(valueIndex => cells
-                                                    .filter(cell => cell.x === groupIndex && cell.options.some(option => option === valueIndex))
-                                                    .map(cell => cell.pos)))),
-            y: [],
-            z: []
-        }
+        groupOptions
     };
 }
 
-function transpose(raw: number[]) {
-    const cellsWithoutOptions = raw.map((value, pos) => ({ pos, ...getCellIndices(pos), value }));
-    return rebuildOptions(cellsWithoutOptions);
+function getAnalysis(sudoku: sudoku) {
+    const baseCells = sudoku.map((value, pos) => ({ pos, groups: getCellGroups(pos), value }));
+    return rebuildOptions(baseCells);
+}
+
+function getNextMoves(analysis: analysis) {
+    const nextMovesViaOnCellOptions = analysis.cells
+            .filter(cell => cell.options.length === 1)
+            .map(cell => ({pos: cell.pos, value: cell.options[0]}));
+
+    const nextMovesViaGroupOptions = analysis.groupOptions
+            .filter(grp => grp.options.length === 1)
+            .map(grp => ({pos: grp.options[0], value: grp.value}));
+
+    return [...new Set([
+        ...nextMovesViaOnCellOptions,
+        ...nextMovesViaGroupOptions
+    ])];
+}
+
+function applyMoves(sudoku: sudoku, nextMoves: {pos: number, value: number}[]) {
+    return sudoku.map((value, index) => {
+        let foundMove = nextMoves.find(move => move.pos === index);
+        return foundMove ? foundMove.value : value;
+    });
 }
 
 export {
-    sudoku,
-    transpose
+    analysis,
+    getAnalysis,
+    getNextMoves,
+    applyMoves
 };

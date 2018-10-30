@@ -1,6 +1,6 @@
-import { sudoku, transpose}  from "./sudoku";
+import { analysis, getAnalysis, getNextMoves, applyMoves}  from "./sudoku";
 
-let logGrid = (s: sudoku) => {
+let logGrid = (s: analysis) => {
 
     let getGridSeparator = (i: number /* 1 -based */) => {
         if (i === 81) {
@@ -17,7 +17,8 @@ let logGrid = (s: sudoku) => {
     let grid = s.cells.reduce((prev, curr, index) => {
         return [
             ...prev,
-            /* "(" + curr.pos + ")" + */(curr.value || "."),
+            //"(" + curr.pos + ")",
+            (curr.value || "."),
             getGridSeparator(index + 1)
         ]
     }, []);
@@ -25,32 +26,18 @@ let logGrid = (s: sudoku) => {
     let cells = s.cells.reduce((prev, curr) => {
         return [
             ...prev,
-            `\n${curr.pos <= 9 ? " " : ""}${curr.pos}: ${curr.x}${curr.y}${curr.z}: `,
-            ...curr.options,
-        ]
-    }, []);
-
-    let groups = s.groupValuePositionOptions.x.reduce((groupPrev, groupCurr, groupIndex) => {
-        return [
-            ...groupPrev,
-
-            groupCurr.reduce((valuePrev, valueCurr, valueIndex) => {
-                return [
-                    ...valuePrev,
-                    `x${groupIndex}${valueIndex + 1}: ${valueCurr}`,
-                    "\n"
-                ]
-            }, []).join(""),
+            `\n${curr.pos <= 9 ? " " : ""}${curr.pos}: `,
+            curr.options,
         ]
     }, []);
 
     console.log([...grid, "\n", ...cells, "\n", ...[]].join(""));
-    console.log(groups.join(""));
+    console.log(s.groupOptions);
 };
 
 test("foo", () => {
 
-    let input = [
+    let sudoku = [
         9,0,7,  0,0,3,  5,0,0,
         0,0,0,  0,0,0,  7,1,2,
         0,0,0,  0,0,5,  0,0,4,
@@ -64,7 +51,15 @@ test("foo", () => {
         0,2,0,  0,3,0,  0,0,8
     ];
 
-    let soduku = transpose(input);
-    logGrid(soduku);
-    expect(soduku).toBeDefined();
+    let analysis = getAnalysis(sudoku);
+    logGrid(analysis);
+
+    let nextMoves = getNextMoves(analysis);
+    console.log(nextMoves);
+
+    sudoku = applyMoves(sudoku, nextMoves);
+    analysis = getAnalysis(sudoku);
+    logGrid(analysis);
+
+    expect(analysis).toBeDefined();
 });
