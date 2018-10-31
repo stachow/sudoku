@@ -9,12 +9,12 @@ export default class Sudoku extends Component<any, sudoku.analysis> {
     this.state = null;
   }
 
-  async componentDidMount() {
-    const response = await fetch('https://s5w.uk/sudoku-api');
-    const responseData: number[] =  await response.json(); // [1, 2, 3, 4]
+  // async componentDidMount() {
+  //   const response = await fetch('https://s5w.uk/sudoku-api');
+  //   const responseData: number[] =  await response.json(); // [1, 2, 3, 4]
 
-    this.setState(sudoku.getAnalysis(responseData));
-  }
+  //   this.setState(sudoku.getAnalysis(responseData));
+  // }
 
   render() {
     const rows  = this.state && this.state.cells || [];

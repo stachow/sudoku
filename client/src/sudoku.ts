@@ -1,51 +1,65 @@
-type sudoku = number[];
+export type sudoku = number[];
 
-type baseCell = {
-    pos: number;
-    groups: string[];
-    value: number;
+export type state = "Solved" | "Broken" | "Incomplete";
+
+export type move = {
+    pos: number,
+    value: number
+};
+
+export type analysis = {
+    cells: {
+        pos: number;
+        value: number;
+        availableValues: number[];
+    }[],
+    groupOptions: {
+        group: string,
+        value: number,
+        availablePositions: number[]
+    }[];
 }
 
-type cell = baseCell & {
-    options: number[];
-}
-
-type analysis = {
-    cells: cell[];
-    groupOptions: {group: string, value: number, options: number[]}[];
-}
-
-const range1To9 = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-const range0To8 = [0, 1, 2, 3, 4, 5, 6, 7, 8];
 const allGroupNames = ["x", "y", "z"]
-                        .reduce((prev, curr) => [...prev, ...range0To8.map(n => curr + n)], <string[]>[]);
+                        .reduce((prev, curr) => [...prev, ...[0, 1, 2, 3, 4, 5, 6, 7, 8]
+                                                                .map(n => curr + n)], <string[]>[]);
 
-function getCellGroups (pos: number) {
-    const x = pos % 9;
-    const y = Math.floor(pos / 9);
-    const z = [
-        "00", "01", "02",
-        "10", "11", "12",
-        "20", "21", "22"
-    ].indexOf(`${Math.floor(x / 3)}${Math.floor(y / 3)}`);
+export function getAnalysis(sudoku: sudoku) {
+    const inFirstNotSecond = <T>(firstArr: T[], secondArr: T[]) =>
+        firstArr.filter(i => !secondArr.some(j => i === j));
 
-    return [`x${x}`, `y${y}`, `z${z}`];
-}
+    const range1To9 = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
-function rebuildOptions(inCells: baseCell[]): analysis {
-    const inFirstNotSecond = <T>(firstArr: T[], secondArr: T[]) => firstArr.filter(i => !secondArr.some(j => i === j));
+    const cellsWithGroups = sudoku.map((value, pos) => ({
+        pos,
+        value,
+        groups: [
+            `x${pos % 9}`,
+            `y${Math.floor(pos / 9)}`,
+            `z${[
+                "00", "10", "20",
+                "01", "11", "21",
+                "02", "12", "22"
+            ].indexOf(`${Math.floor((pos % 9) / 3)}${Math.floor(pos / 27)}`)}`]
+    }));
 
     const groupsCurrentValues = allGroupNames.reduce((prev, curr) => {
-        return ({...prev, [curr]: inCells.filter(c => c.groups.some(g => g === curr) && c.value).map(c => c.value) });
+        return ({...prev, [curr]: cellsWithGroups
+                .filter(c => c.groups.some(g => g === curr) && c.value)
+                .map(c => c.value) });
     }, <{[key: string]: number[]}>{});
 
-    const getCellOptions = (cell: baseCell) => cell.value
-            ? []
-            : inFirstNotSecond<number>(range1To9, cell.groups.reduce((prev, curr) => [...prev, ...groupsCurrentValues[curr]],[]));
-
-    const cells = inCells.map(inpCell => ({
-        ...inpCell,
-        options: getCellOptions(inpCell)
+    const cellsWithOptions = cellsWithGroups.map(cell => ({
+        ...cell,
+        availableValues: cell.value
+        ? []
+        : inFirstNotSecond<number>(
+            range1To9,
+            cell.groups
+                .reduce((prev, curr) => [
+                    ...prev,
+                    ...groupsCurrentValues[curr]
+                ],[]))
     }));
 
     const groupOptions = allGroupNames.reduce((prevGroup, group) => {
@@ -55,48 +69,62 @@ function rebuildOptions(inCells: baseCell[]): analysis {
                 return [
                     ...prevValue,
                     {group, value,
-                        options: cells.filter(cell => cell.groups.some(grp => grp === group)
-                                                && cell.options.some(opt => opt === value))
+                        availablePositions: cellsWithOptions
+                                    .filter(cell => cell.groups.some(grp => grp === group)
+                                                && cell.availableValues.some(opt => opt === value))
                                     .map(c => c.pos)}
                 ]}, [])
         ]}, []);
 
-    return {
-        cells,
+    return <analysis>{
+        cells: cellsWithOptions.map(cell => {
+            const {groups, ...rest} = cell;
+            return rest;
+        }),
         groupOptions
     };
 }
 
-function getAnalysis(sudoku: sudoku) {
-    const baseCells = sudoku.map((value, pos) => ({ pos, groups: getCellGroups(pos), value }));
-    return rebuildOptions(baseCells);
-}
-
-function getNextMoves(analysis: analysis) {
-    const nextMovesViaOnCellOptions = analysis.cells
-            .filter(cell => cell.options.length === 1)
-            .map(cell => ({pos: cell.pos, value: cell.options[0]}));
+export function getNextSolidMoves(analysis: analysis) {
+    const nextMovesViaCellOptions = analysis.cells
+            .filter(cell => cell.availableValues.length === 1)
+            .map(cell => ({pos: cell.pos, value: cell.availableValues[0]}));
 
     const nextMovesViaGroupOptions = analysis.groupOptions
-            .filter(grp => grp.options.length === 1)
-            .map(grp => ({pos: grp.options[0], value: grp.value}));
+            .filter(grp => grp.availablePositions.length === 1)
+            .map(grp => ({pos: grp.availablePositions[0], value: grp.value}));
 
-    return [...new Set([
-        ...nextMovesViaOnCellOptions,
+    const sortedUniqueMoves = [
+        ...nextMovesViaCellOptions,
         ...nextMovesViaGroupOptions
-    ])];
+        ].reduce((prev, curr) => prev.some(i => i.pos === curr.pos) ? prev : [...prev, curr],
+            <{pos: number, value: number}[]>[])
+        .sort((a, b) => a.pos - b.pos);
+
+    return sortedUniqueMoves;
 }
 
-function applyMoves(sudoku: sudoku, nextMoves: {pos: number, value: number}[]) {
+export function getNextTentativeMoves(analysis: analysis) {
+    const nextMoveCell = analysis.cells
+        .filter(c => !c.value)
+        .sort((a, b) => a.availableValues.length - b.availableValues.length)[0];
+
+    return nextMoveCell.availableValues.map(value => ({pos: nextMoveCell.pos, value}));
+}
+
+export function applyMoves(sudoku: sudoku, nextMoves: move[]) {
     return sudoku.map((value, index) => {
-        let foundMove = nextMoves.find(move => move.pos === index);
+        const foundMove = nextMoves.find(move => move.pos === index);
         return foundMove ? foundMove.value : value;
     });
 }
 
-export {
-    analysis,
-    getAnalysis,
-    getNextMoves,
-    applyMoves
-};
+export function getState(analysis: analysis): state {
+    return analysis.cells.every(cell => !!cell.value)
+        ? "Solved"
+        : analysis.cells.some(cell => !cell.value && !cell.availableValues.length)
+            ? "Broken"
+            : "Incomplete";
+}
+
+
