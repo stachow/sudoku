@@ -1,8 +1,8 @@
 import * as React from "react";
 import { Component } from 'react';
-import * as sudoku from '../sudoku';
+import * as sudoku from '../sudokuSolver';
 
-export default class Sudoku extends Component<any, sudoku.analysis> {
+export default class Sudoku extends Component<any, any> {
 
   constructor(props: any) {
     super(props);
